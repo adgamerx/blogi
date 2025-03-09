@@ -50,9 +50,17 @@ export default function LoginPage() {
       toast.success('Login successful!');
       router.push('/');
     } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err.response?.data?.detail || 'Invalid username or password');
-      toast.error(err.response?.data?.detail || 'Invalid username or password');
+      // Handle 400 errors as expected invalid credentials
+      if (err.response?.status === 400) {
+        const errorMessage = err.response.data?.detail || 'Invalid username or password';
+        setError(errorMessage);
+        toast.error(errorMessage);
+      } else {
+        // Handle other errors (network issues, server errors, etc.)
+        console.error('Login error:', err);
+        setError('An unexpected error occurred. Please try again later.');
+        toast.error('An unexpected error occurred. Please try again later.');
+      }
     } finally {
       setIsLoading(false);
     }

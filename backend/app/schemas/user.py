@@ -8,4 +8,4 @@ class UserCreate(BaseModel):
 class UserOut(BaseModel):
     id: int
     username: str
-    model_config: ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)

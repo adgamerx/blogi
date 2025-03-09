@@ -1,0 +1,190 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import React from 'react';
+import {
+  Typography,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CardMedia,
+  Divider,
+  Alert,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+} from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import MainLayout from '../../components/MainLayout';
+import { postsService, Post } from '../../services/posts';
+import { useAuthStore } from '../../store/authStore';
+import { format } from 'date-fns';
+import { toast } from 'react-toastify';
+
+// Import React 18's Suspense component
+import { Suspense } from 'react';
+
+// Define a type for the params
+type PostParams = {
+  id: string;
+};
+
+// Main component for post detail
+export default async function PostDetailPage({ params }: { params: PostParams }) {
+  // In Next.js 15, we can simply await params
+  const { id } = await params;
+
+  return <PostDetail id={id} />;
+}
+
+// Client component that handles the post detail UI and logic
+function PostDetail({ id }: { id: string }) {
+  const [post, setPost] = useState<Post | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const { isAuthenticated, user } = useAuthStore();
+  const router = useRouter();
+  const postId = parseInt(id);
+
+  useEffect(() => {
+    const fetchPost = async () => {
+      try {
+        const data = await postsService.getPostById(postId);
+        setPost(data);
+      } catch (err: any) {
+        console.error('Failed to fetch post:', err);
+        setError(err.response?.data?.detail || 'Failed to load post.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (postId) {
+      fetchPost();
+    }
+  }, [postId]);
+
+  const handleEdit = () => {
+    router.push(`/edit-post/${postId}`);
+  };
+
+  const handleDeleteDialogOpen = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteDialogClose = () => {
+    setDeleteDialogOpen(false);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await postsService.deletePost(postId);
+      toast.success('Post deleted successfully');
+      router.push('/');
+    } catch (err: any) {
+      console.error('Failed to delete post:', err);
+      toast.error(err.response?.data?.detail || 'Failed to delete post.');
+    } finally {
+      setDeleteDialogOpen(false);
+    }
+  };
+
+  const isAuthor = post && user && post.author_id === user.id;
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <Typography>Loading post...</Typography>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <Alert severity="error">{error}</Alert>
+      </MainLayout>
+    );
+  }
+
+  if (!post) {
+    return (
+      <MainLayout>
+        <Alert severity="info">Post not found</Alert>
+      </MainLayout>
+    );
+  }
+
+  return (
+    <MainLayout>
+      <Card sx={{ mb: 4 }}>
+        {post.image_data && (
+          <CardMedia
+            component="img"
+            sx={{ height: 300, objectFit: 'cover' }}
+            image={`data:image/jpeg;base64,${post.image_data}`}
+            alt={post.title}
+          />
+        )}
+        <CardContent>
+          <Typography gutterBottom variant="h4" component="h1">
+            {post.title}
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+            By {post.author?.username} on {format(new Date(post.created_at), 'MMMM dd, yyyy')}
+            {post.updated_at !== post.created_at && 
+              ` (Updated: ${format(new Date(post.updated_at), 'MMMM dd, yyyy')})`}
+          </Typography>
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
+            {post.content}
+          </Typography>
+        </CardContent>
+      </Card>
+
+      {isAuthenticated && isAuthor && (
+        <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
+          <Button 
+            variant="contained" 
+            startIcon={<EditIcon />} 
+            onClick={handleEdit}
+          >
+            Edit Post
+          </Button>
+          <Button 
+            variant="outlined" 
+            color="error" 
+            startIcon={<DeleteIcon />} 
+            onClick={handleDeleteDialogOpen}
+          >
+            Delete Post
+          </Button>
+        </Box>
+      )}
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteDialogClose}
+      >
+        <DialogTitle>Delete Post</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this post? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteDialogClose}>Cancel</Button>
+          <Button onClick={handleDeleteConfirm} color="error" autoFocus>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </MainLayout>
+  );
+} 

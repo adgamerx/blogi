@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import React from 'react';
 import {
   Typography,
@@ -29,16 +29,13 @@ import { toast } from 'react-toastify';
 // Import React 18's Suspense component
 import { Suspense } from 'react';
 
-// Define a type for the params
-type PostParams = {
-  id: string;
-};
+// Main page component - no async here since it's client component
+export default function PostDetailPage() {
+  // Use the built-in useParams hook to get URL params
+  const params = useParams();
+  const id = params?.id as string;
 
-// Main component for post detail
-export default async function PostDetailPage({ params }: { params: PostParams }) {
-  // In Next.js 15, we can simply await params
-  const { id } = await params;
-
+  // Render the detail component with the id
   return <PostDetail id={id} />;
 }
 
@@ -52,11 +49,24 @@ function PostDetail({ id }: { id: string }) {
   const router = useRouter();
   const postId = parseInt(id);
 
+  // Add effect to check auth state when component mounts
+  useEffect(() => {
+    // Check auth state on mount
+    console.log('Auth state check:', { 
+      isAuthenticated, 
+      hasUser: !!user, 
+      userId: user?.id,
+      localStorage: typeof window !== 'undefined' ? !!localStorage.getItem('auth_token') : 'N/A' 
+    });
+  }, [isAuthenticated, user]);
+
   useEffect(() => {
     const fetchPost = async () => {
       try {
         const data = await postsService.getPostById(postId);
         setPost(data);
+        // Light debugging that won't interfere with functionality
+        console.log('Post loaded:', { postId, authorId: data.author_id });
       } catch (err: any) {
         console.error('Failed to fetch post:', err);
         setError(err.response?.data?.detail || 'Failed to load post.');
@@ -68,7 +78,7 @@ function PostDetail({ id }: { id: string }) {
     if (postId) {
       fetchPost();
     }
-  }, [postId]);
+  }, [postId, user]);
 
   const handleEdit = () => {
     router.push(`/edit-post/${postId}`);
@@ -96,6 +106,13 @@ function PostDetail({ id }: { id: string }) {
   };
 
   const isAuthor = post && user && post.author_id === user.id;
+
+  console.log('Debug values:', { 
+    isAuthenticated, 
+    user: user ? { id: user.id, username: user.username } : null,
+    post: post ? { id: post.id, author_id: post.author_id, title: post.title } : null,
+    isAuthor
+  });
 
   if (loading) {
     return (

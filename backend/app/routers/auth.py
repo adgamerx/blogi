@@ -8,6 +8,7 @@ from passlib.context import CryptContext
 import jwt
 from dotenv import load_dotenv
 import os
+from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -17,16 +18,14 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-router = APIRouter()
+router = APIRouter(tags=["auth"])
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def create_access_token(data: dict, expires_delta: int):
     to_encode = data.copy()
-    import datetime
-    expire = datetime.datetime.utcnow() + datetime.timedelta(minutes=expires_delta)
+    expire = datetime.utcnow() + timedelta(minutes=expires_delta)
     to_encode.update({"exp": expire})
-    import jwt
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
@@ -64,13 +63,19 @@ def get_current_user(token:str = Depends(oauth2_scheme)):
     
     return username
 
+def get_user_details(username: str, db: Session):
+    user = db.query(User).filter(User.username == username).first()
+    if not user:
+        return None
+    return UserOut.model_validate(user)
+
 @router.post("/register", response_model=UserOut)
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.username == user.username).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
     
-    new_user = User(username=user.username, password=get_hashed_password(user.password))
+    new_user = User(username=user.username, hashed_password=get_hashed_password(user.password))
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -81,7 +86,7 @@ def login(user: UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.username == user.username).first()
     if not db_user:
         raise HTTPException(status_code=400, detail="Incorrect username")
-    if not verify_password(user.password, db_user.password):
+    if not verify_password(user.password, db_user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect password")
     
     access_token = create_access_token(data={"sub": db_user.username}, expires_delta=ACCESS_TOKEN_EXPIRE_MINUTES)

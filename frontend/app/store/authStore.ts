@@ -20,8 +20,20 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       user: null,
       isAuthenticated: false,
-      login: (token, user) => set({ token, user, isAuthenticated: true }),
-      logout: () => set({ token: null, user: null, isAuthenticated: false }),
+      login: (token, user) => {
+        // Also store token in localStorage for axios interceptor
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('auth_token', token);
+        }
+        set({ token, user, isAuthenticated: true });
+      },
+      logout: () => {
+        // Clear localStorage token
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('auth_token');
+        }
+        set({ token: null, user: null, isAuthenticated: false });
+      },
     }),
     {
       name: 'auth-storage',

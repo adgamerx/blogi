@@ -1,0 +1,13 @@
+name: Cron Job
+
+on:
+  schedule:
+    - cron: "* * * * *"
+
+jobs:
+  run-cron:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Visit URL
+        run: curl -s https://blogi-doa6.onrender.com

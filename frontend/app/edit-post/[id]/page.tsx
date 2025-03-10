@@ -99,7 +99,7 @@ function EditPostForm({ id }: { id: string }) {
         }
         
         // Check if current user is the author
-        if (user && data.author_id !== user.id) {
+        if (user && data.author && data.author.username !== user.username) {
           setError('You are not authorized to edit this post');
           toast.error('You are not authorized to edit this post');
           router.push(`/posts/${postId}`);

@@ -95,7 +95,14 @@ function PostDetail({ id }: { id: string }) {
     }
   };
 
-  const isAuthor = post && user && post.author_id === user.id;
+  const isAuthor = post && user && post.author && post.author.username === user.username;
+
+  // Add debug logging
+  console.log('Author check:', { 
+    currentUser: user?.username, 
+    postAuthor: post?.author?.username,
+    isAuthor
+  });
 
   if (loading) {
     return (

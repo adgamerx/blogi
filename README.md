@@ -98,32 +98,6 @@ docker-compose up -d
 # API Documentation: http://localhost:8000/docs
 ```
 
-## 🧭 Project Structure
-
-```
-Blogi/
-├── backend/              # Backend FastAPI application
-│   ├── app/              # Application modules
-│   │   ├── api/          # API routes
-│   │   ├── core/         # Core functionality
-│   │   ├── db/           # Database models and config
-│   │   └── services/     # Business logic
-│   ├── requirements.txt  # Python dependencies
-│   └── main.py           # Application entry point
-│
-├── frontend/             # Next.js frontend
-│   ├── app/              # Next.js app directory
-│   │   ├── components/   # Reusable components
-│   │   ├── lib/          # Utility functions
-│   │   ├── services/     # API service functions
-│   │   └── store/        # State management
-│   ├── public/           # Static assets
-│   └── package.json      # Node dependencies
-│
-├── docker-compose.yml    # Docker Compose configuration
-└── README.md             # Project documentation
-```
-
 ## 📝 Usage
 
 1. Register a new account or login with existing credentials
